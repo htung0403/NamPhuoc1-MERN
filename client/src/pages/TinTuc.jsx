@@ -1,17 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import PostCardSquare from '../components/PostCardSquare';
+import React, { useEffect, useState } from "react";
+import PostCardSquare from "../components/PostCardSquare";
 
 const TinTuc = () => {
-  document.title = `TIN TỨC - TRƯỜNG TIỂU HỌC NAM PHƯỚC 1`;
+  document.title = "TIN TỨC - TRƯỜNG TIỂU HỌC NAM PHƯỚC 1";
 
   const [posts, setPosts] = useState([]);
+  const [totalPosts, setTotalPosts] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showMore, setShowMore] = useState(true);
 
-  const API_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://namphuoc1.edu.vn/api' 
-    : 'http://localhost:3000/api';
+  const API_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://namphuoc1.edu.vn/api"
+      : "http://localhost:3005/api";
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -28,10 +30,10 @@ const TinTuc = () => {
         }
 
         const data = await response.json();
-        setPosts(data.posts);
-        if(data.posts.length<9){
-          setShowMore(false);
-        }
+        const fetchedPosts = data.posts || [];
+        setPosts(fetchedPosts);
+        setTotalPosts(data.totalPosts || fetchedPosts.length);
+        if (fetchedPosts.length < 9) setShowMore(false);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -45,49 +47,63 @@ const TinTuc = () => {
   const handleShowMore = async () => {
     const startIndex = posts.length;
     try {
-        const res = await fetch(`${API_URL}/post/getposts?category=tin-tuc&startIndex=${startIndex}`);
-        const data = await res.json();
-        if (res.ok) {
-            setPosts((prev) => [...prev, ...data.posts]);
-            if(data.posts.length<9){
-              setShowMore(false);
-            }
-        }
+      const res = await fetch(`${API_URL}/post/getposts?category=tin-tuc&startIndex=${startIndex}`);
+      const data = await res.json();
+      if (res.ok) {
+        const fetchedPosts = data.posts || [];
+        setPosts((prev) => [...prev, ...fetchedPosts]);
+        setTotalPosts(data.totalPosts || totalPosts);
+        if (fetchedPosts.length < 9) setShowMore(false);
+      }
     } catch (error) {
-        console.log(error.message);
+      console.log(error.message);
     }
   };
 
-  console.log("Posts:", posts);
+  if (loading) {
+    return <div className="school-container py-14 text-center font-semibold text-primary">Đang tải tin tức...</div>;
+  }
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (error) {
+    return <div className="school-container py-14 text-center font-semibold text-red-600">Error: {error}</div>;
+  }
+
+  const count = totalPosts || posts.length;
 
   return (
-    <div className="pt-[70px] mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8">
-      <div className="flex flex-row justify-start">
-        <div className="w-3 h-10 mr-4 bg-cyan-600 border rounded-lg"></div>
-        <h1 className="font-semibold text-[1.7rem] text-cyan-600">
-          TIN TỨC CỦA TRƯỜNG
-        </h1>
+    <div className="school-container py-8 sm:py-12">
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+        <div>
+          <h1 className="school-section-title text-2xl sm:text-3xl">Tin tức của trường</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+            Những thông tin mới nhất về hoạt động dạy học và đời sống học đường.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <button type="button" className="rounded-full bg-primary px-4 py-2 font-heading text-xs font-extrabold text-white sm:px-5 sm:text-sm">
+            Tất cả ({count})
+          </button>
+          <button type="button" className="rounded-full border border-primary bg-white px-4 py-2 font-heading text-xs font-extrabold text-primary sm:px-5 sm:text-sm">
+            Tin tức ({count})
+          </button>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-4 mt-6">
+
+      <div className="news-card-grid mt-6 sm:mt-8">
         {posts.map((post) => (
           <PostCardSquare key={post._id} post={post} />
         ))}
       </div>
+
       {showMore && (
-        <div className="flex justify-center">
-          <button
-            onClick={handleShowMore}
-            className="w-full text-teal-500 self-center text-sm py-7"
-          >
+        <div className="mt-8 flex justify-center sm:mt-10">
+          <button onClick={handleShowMore} className="school-button px-8 py-3" type="button">
             Xem thêm
           </button>
         </div>
       )}
     </div>
   );
-}
+};
 
 export default TinTuc;

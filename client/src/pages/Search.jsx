@@ -1,7 +1,6 @@
-import { Button, Select, TextInput } from "flowbite-react";
+import { Select, TextInput } from "flowbite-react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import PostCard from "../components/PostCard";
 import PostCardSquare from "../components/PostCardSquare";
 
 export default function Search() {
@@ -10,31 +9,29 @@ export default function Search() {
     sort: "desc",
     category: "uncategorized",
   });
-
-  console.log(sidebarData);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
 
   const location = useLocation();
-
   const navigate = useNavigate();
 
-  const API_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://namphuoc1.edu.vn/api' 
-    : 'http://localhost:3000/api';
+  const API_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://namphuoc1.edu.vn/api"
+      : "http://localhost:3005/api";
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const searchTermFromUrl = urlParams.get("searchTerm");
     const sortFromUrl = urlParams.get("sort");
     const categoryFromUrl = urlParams.get("category");
+
     if (searchTermFromUrl || sortFromUrl || categoryFromUrl) {
       setSidebarData({
-        ...sidebarData,
-        searchTerm: searchTermFromUrl,
-        sort: sortFromUrl,
-        category: categoryFromUrl,
+        searchTerm: searchTermFromUrl || "",
+        sort: sortFromUrl || "desc",
+        category: categoryFromUrl || "uncategorized",
       });
     }
 
@@ -46,133 +43,171 @@ export default function Search() {
         setLoading(false);
         return;
       }
-      if (res.ok) {
-        const data = await res.json();
-        setPosts(data.posts);
-        setLoading(false);
-        if (data.posts.length === 9) {
-          setShowMore(true);
-        } else {
-          setShowMore(false);
-        }
-      }
+
+      const data = await res.json();
+      const fetchedPosts = data.posts || [];
+      setPosts(fetchedPosts);
+      setLoading(false);
+      setShowMore(fetchedPosts.length === 9);
     };
+
     fetchPosts();
   }, [location.search]);
 
-  const handleChange = (e) => {
-    if (e.target.id === "searchTerm") {
-      setSidebarData({ ...sidebarData, searchTerm: e.target.value });
-    }
-    if (e.target.id === "sort") {
-      const order = e.target.value || "desc";
-      setSidebarData({ ...sidebarData, sort: order });
-    }
-    if (e.target.id === "category") {
-      const category = e.target.value || "uncategorized";
-      setSidebarData({ ...sidebarData, category });
-    }
+  const handleChange = (event) => {
+    const { id, value } = event.target;
+    setSidebarData((current) => ({
+      ...current,
+      [id]: value || (id === "sort" ? "desc" : "uncategorized"),
+    }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     const urlParams = new URLSearchParams(location.search);
     urlParams.set("searchTerm", sidebarData.searchTerm);
     urlParams.set("sort", sidebarData.sort);
-    
-    // Conditionally set the category parameter
+
     if (sidebarData.category && sidebarData.category !== "uncategorized") {
       urlParams.set("category", sidebarData.category);
     } else {
       urlParams.delete("category");
     }
-  
-    const searchQuery = urlParams.toString();
-    navigate(`/search?${searchQuery}`);
+
+    navigate(`/search?${urlParams.toString()}`);
   };
 
   const handleShowMore = async () => {
-    const numberOfPosts = posts.length;
-    const startIndex = numberOfPosts;
     const urlParams = new URLSearchParams(location.search);
-    urlParams.set("startIndex", startIndex);
+    urlParams.set("startIndex", posts.length);
     const searchQuery = urlParams.toString();
     const res = await fetch(`${API_URL}/post/getposts?${searchQuery}`);
-    if (!res.ok) {
-      return;
-    }
-    if (res.ok) {
-      const data = await res.json();
-      setPosts([...posts, ...data.posts]);
-      if (data.posts.length === 9) {
-        setShowMore(true);
-      } else {
-        setShowMore(false);
-      }
-    }
+    if (!res.ok) return;
+
+    const data = await res.json();
+    const fetchedPosts = data.posts || [];
+    setPosts((current) => [...current, ...fetchedPosts]);
+    setShowMore(fetchedPosts.length === 9);
   };
 
+  const categoryLabel = {
+    uncategorized: "Tất cả danh mục",
+    "tin-tuc": "Tin tức",
+    "su-kien": "Sự kiện",
+    "phu-huynh": "Phụ huynh",
+  }[sidebarData.category];
+
   return (
-    <div className="flex flex-col md:flex-row">
-      <div className="p-7 border-b md:border-r md:min-h-screen border-gray-500">
-        <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
-          <div className="flex   items-center gap-2">
-            <label className="whitespace-nowrap font-semibold">Tìm kiếm:</label>
-            <TextInput
-              placeholder="Search..."
-              id="searchTerm"
-              type="text"
-              value={sidebarData.searchTerm}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="font-semibold">Sắp xếp:</label>
-            <Select onChange={handleChange} value={sidebarData.sort} id="sort">
-              <option value="desc">Mới nhất</option>
-              <option value="asc">Cũ nhất</option>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="font-semibold">Danh mục:</label>
-            <Select
-              onChange={handleChange}
-              value={sidebarData.category}
-              id="category"
-            >
-              <option value="uncategorized">Chọn một danh mục</option>
-              <option value="tin-tuc">Tin tức</option>
-              <option value="su-kien">Sự kiện</option>
-              <option value="phu-huynh">Phụ huynh</option>
-            </Select>
-          </div>
-          <Button type="submit" outline gradientDuoTone="cyanToBlue">
-            Áp dụng
-          </Button>
-        </form>
-      </div>
-      <div className="w-full">
-        <h1 className="text-3xl font-semibold sm:border-b border-gray-500 p-3 mt-5 ">
-          Kết quả tìm kiếm:
-        </h1>
-        <div className="p-7 flex flex-wrap gap-4">
-          {!loading && posts.length === 0 && (
-            <p className="text-xl text-gray-500">Không tìm thấy bài viết phù hợp.</p>
-          )}
-          {loading && <p className="text-xl text-gray-500">Đang tải...</p>}
-          {!loading &&
-            posts &&
-            posts.map((post) => <PostCardSquare key={post._id} post={post} />)}
-          {showMore && (
-            <button
-              onClick={handleShowMore}
-              className="text-teal-500 text-lg hover:underline p-7 w-full"
-            >
-              Xem thêm
+    <main className="school-container py-8 sm:py-12">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8">
+        <aside className="lg:col-span-1">
+          <form onSubmit={handleSubmit} className="school-card sticky top-28 space-y-5 p-4 sm:p-5">
+            <div>
+              <h1 className="school-section-title text-2xl">Tìm kiếm</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Lọc bài viết theo từ khóa, thời gian và danh mục.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="searchTerm" className="mb-2 block font-heading text-sm font-bold text-slate-700">
+                Từ khóa
+              </label>
+              <TextInput
+                placeholder="Nhập từ khóa..."
+                id="searchTerm"
+                type="text"
+                value={sidebarData.searchTerm}
+                onChange={handleChange}
+              />
+            </div>
+
+            <div>
+              <label htmlFor="sort" className="mb-2 block font-heading text-sm font-bold text-slate-700">
+                Sắp xếp
+              </label>
+              <Select onChange={handleChange} value={sidebarData.sort} id="sort">
+                <option value="desc">Mới nhất</option>
+                <option value="asc">Cũ nhất</option>
+              </Select>
+            </div>
+
+            <div>
+              <label htmlFor="category" className="mb-2 block font-heading text-sm font-bold text-slate-700">
+                Danh mục
+              </label>
+              <Select onChange={handleChange} value={sidebarData.category} id="category">
+                <option value="uncategorized">Tất cả danh mục</option>
+                <option value="tin-tuc">Tin tức</option>
+                <option value="su-kien">Sự kiện</option>
+                <option value="phu-huynh">Phụ huynh</option>
+              </Select>
+            </div>
+
+            <button type="submit" className="school-button w-full py-3">
+              Áp dụng
             </button>
-          )}
-        </div>
+          </form>
+        </aside>
+
+        <section className="lg:col-span-3">
+          <div className="school-card p-4 sm:p-6">
+            <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+              <div>
+                <h2 className="font-heading text-2xl font-extrabold text-slate-900 sm:text-3xl">
+                  Kết quả tìm kiếm
+                </h2>
+                <p className="mt-2 text-sm text-slate-600 sm:text-base">
+                  {sidebarData.searchTerm
+                    ? `Từ khóa: "${sidebarData.searchTerm}"`
+                    : "Nhập từ khóa hoặc chọn bộ lọc để tìm bài viết."}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-primary">
+                  {categoryLabel}
+                </span>
+                <span className="rounded-full bg-accent/15 px-3 py-1 text-xs font-bold text-primary">
+                  {sidebarData.sort === "desc" ? "Mới nhất" : "Cũ nhất"}
+                </span>
+                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+                  {posts.length} bài viết
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            {!loading && posts.length === 0 && (
+              <div className="school-card p-8 text-center text-slate-600">
+                Không tìm thấy bài viết phù hợp.
+              </div>
+            )}
+
+            {loading && (
+              <div className="school-card p-8 text-center font-semibold text-primary">
+                Đang tải...
+              </div>
+            )}
+
+            {!loading && posts.length > 0 && (
+              <div className="news-card-grid">
+                {posts.map((post) => (
+                  <PostCardSquare key={post._id} post={post} />
+                ))}
+              </div>
+            )}
+
+            {showMore && (
+              <div className="mt-8 flex justify-center">
+                <button onClick={handleShowMore} className="school-button px-8 py-3" type="button">
+                  Xem thêm
+                </button>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }

@@ -1,13 +1,7 @@
 import { Alert, Button, FileInput, Select, TextInput } from "flowbite-react";
 import ReactQuill, { Quill } from "react-quill";
 import imageResize from "quill-image-resize-module-react";
-import {
-  getDownloadURL,
-  getStorage,
-  ref,
-  uploadBytesResumable,
-} from "firebase/storage";
-import { app } from "../firebase";
+import { uploadToCloudinary, validateFile, deleteFromCloudinary } from "../cloudinary";
 import { useEffect, useState } from "react";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -16,7 +10,8 @@ import { useSelector } from "react-redux";
 import "./styles.css";
 import imageHandler from "./components/imageHandler";
 import "quill/dist/quill.snow.css";
-import useCheckAuth from "../../../api/utils/checkAuth";
+import { HiOutlineCloudUpload } from "react-icons/hi";
+import useCheckAuth from "./checkAuth.js";
 
 export default function UpdatePost() {
   Quill.register("modules/imageResize", imageResize);
@@ -37,20 +32,18 @@ export default function UpdatePost() {
   const toolbarOptions = [
     [{ font: [] }],
     [{ header: [1, 2, 3, 4, 5, 6, false] }],
-    ["bold", "italic", "underline", "strike"], // toggled buttons
+    ["bold", "italic", "underline", "strike"],
     ["blockquote"],
     ["link", "image", "video"],
-
-    [{ header: 1 }, { header: 2 }], // custom button values
+    [{ header: 1 }, { header: 2 }],
     [{ list: "ordered" }, { list: "bullet" }, { list: "check" }],
-    [{ indent: "-1" }, { indent: "+1" }], // outdent/indent
-    [{ direction: "rtl" }], // text direction
-
-    [{ color: [] }, { background: [] }], // dropdown with defaults from theme
+    [{ indent: "-1" }, { indent: "+1" }],
+    [{ direction: "rtl" }],
+    [{ color: [] }, { background: [] }],
     [{ align: [] }],
-
-    ["clean"], // remove formatting button
+    ["clean"],
   ];
+
   const modules = {
     toolbar: {
       container: toolbarOptions,
@@ -71,18 +64,14 @@ export default function UpdatePost() {
         const res = await fetch(`/api/post/getposts?postId=${postId}`);
         const data = await res.json();
         if (!res.ok) {
-          console.log(data.message);
           setPublishError(data.message);
           return;
         }
-        if (res.ok) {
-          setPublishError(null);
-          setFormData(data.posts[0]);
-          // Set the category based on the fetched data
-          setCategory(data.posts[0].category || "uncategorized");
-        }
-      } catch (error) {
-        console.log(error.message);
+        setPublishError(null);
+        setFormData(data.posts[0]);
+        setCategory(data.posts[0].category || "uncategorized");
+      } catch {
+        setPublishError("Đã xảy ra lỗi");
       }
     };
 
@@ -95,34 +84,52 @@ export default function UpdatePost() {
         setImageUploadError("Chưa chọn ảnh nền");
         return;
       }
+      const validation = validateFile(file);
+      if (!validation.valid) {
+        setImageUploadError(validation.error);
+        return;
+      }
       setImageUploadError(null);
-      const storage = getStorage(app);
-      const fileName = `postImages/${new Date().getTime()}-${file.name}`;
-      const storageRef = ref(storage, fileName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          const progress =
-            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setImageUploadProgress(progress.toFixed(0));
-        },
-        (error) => {
-          setImageUploadError("Tải ảnh thất bại");
-          setImageUploadProgress(null);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-            setImageUploadProgress(null);
-            setImageUploadError(null);
-            setFormData({ ...formData, image: downloadURL });
-          });
-        }
+      const downloadURL = await uploadToCloudinary(
+        file,
+        "postImages",
+        "image",
+        (progress) => setImageUploadProgress(progress.toFixed(0))
       );
-    } catch (error) {
+      setImageUploadProgress(null);
+      setImageUploadError(null);
+      setFormData({ ...formData, image: downloadURL });
+    } catch {
       setImageUploadError("Tải ảnh thất bại");
       setImageUploadProgress(null);
-      console.log(error);
+    }
+  };
+
+  const extractPublicId = (url) => {
+    try {
+      const parts = new URL(url).pathname.split("/");
+      const uploadIndex = parts.indexOf("upload");
+      if (uploadIndex === -1) return null;
+      const publicIdWithExt = parts.slice(uploadIndex + 2).join("/");
+      const dotIndex = publicIdWithExt.lastIndexOf(".");
+      return dotIndex === -1 ? publicIdWithExt : publicIdWithExt.substring(0, dotIndex);
+    } catch {
+      return null;
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!formData.image) return;
+    const publicId = extractPublicId(formData.image);
+    if (!publicId) {
+      setImageUploadError("Không thể xác định public ID của ảnh");
+      return;
+    }
+    try {
+      await deleteFromCloudinary(publicId, "image");
+      setFormData({ ...formData, image: "" });
+    } catch {
+      setImageUploadError("Xóa ảnh thất bại");
     }
   };
 
@@ -133,54 +140,48 @@ export default function UpdatePost() {
       return;
     }
     try {
-      const res = await fetch(
-        `/api/post/updatepost/${postId}/${currentUser.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
-        }
-      );
+      const res = await fetch(`/api/post/updatepost/${postId}/${currentUser.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
       const data = await res.json();
       if (!res.ok) {
         setPublishError(data.message);
         return;
       }
 
-      if (res.ok) {
-        setPublishError(null);
-        navigate(`/${data.slug}`);
-      }
-    } catch (error) {
+      setPublishError(null);
+      navigate(`/${data.slug}`);
+    } catch {
       setPublishError("Đã xảy ra lỗi");
     }
   };
+
   return (
-    <div className="p-3 max-w-[70rem] mx-auto min-h-screen">
-      <h1 className="text-center text-3xl my-7 font-semibold">
-        Chỉnh sửa bài viết
-      </h1>
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-4 sm:flex-row justify-between">
-          <TextInput
+    <div className="min-h-screen w-full bg-blue-50/40 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl rounded-2xl bg-white p-8 shadow-md"><h1 className="mb-8 text-center font-heading text-2xl font-bold text-primary">Chỉnh sửa bài viết</h1>
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+          <label className="block"><span className="mb-2 block text-sm font-semibold text-gray-700">Tiêu đề</span><TextInput
+            className="[&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:px-4 [&_input]:py-3 [&_input]:focus:border-primary [&_input]:focus:ring-2 [&_input]:focus:ring-primary/20"
             type="text"
             placeholder="Tiêu đề"
             required
             id="title"
-            className="flex-1"
-            onChange={(e) =>
-              setFormData({ ...formData, title: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
             value={formData.title}
           />
-          <Select
+          </label>
+          <label className="block"><span className="mb-2 block text-sm font-semibold text-gray-700">Danh mục</span><Select
             value={category}
             onChange={(e) => {
               setCategory(e.target.value);
               setFormData({ ...formData, category: e.target.value });
             }}
+            className="[&_select]:rounded-xl [&_select]:border-gray-200 [&_select]:px-4 [&_select]:py-3 [&_select]:focus:border-primary [&_select]:focus:ring-2 [&_select]:focus:ring-primary/20"
             required
           >
             <option value="uncategorized">Chọn một danh mục</option>
@@ -188,50 +189,67 @@ export default function UpdatePost() {
             <option value="su-kien">Sự kiện</option>
             <option value="phu-huynh">Phụ huynh</option>
           </Select>
+          </label>
         </div>
-        <div className="flex gap-4 items-center justify-between border-4 border-blue-300 border-dashed p-3">
-          <FileInput
-            type="file"
-            accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <Button
-            type="button"
-            gradientDuoTone="cyanToBlue"
-            size="sm"
-            outline
-            onClick={handleUpdloadImage}
-            disabled={imageUploadProgress}
-          >
-            {imageUploadProgress ? (
-              <div className="w-16 h-16">
-                <CircularProgressbar
-                  value={imageUploadProgress}
-                  text={`${imageUploadProgress || 0}%`}
-                />
+        <div className="rounded-2xl border border-dashed border-primary/40 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm transition hover:border-primary/70 hover:shadow-md">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4 text-left">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <HiOutlineCloudUpload className="h-8 w-8" />
               </div>
-            ) : (
-              "Tải ảnh nền lên"
-            )}
-          </Button>
+              <div>
+                <p className="font-heading text-base font-bold text-primary">Ảnh bìa bài viết</p>
+                <p className="mt-1 text-sm text-gray-500">Kéo thả ảnh vào đây hoặc chọn từ máy tính. Hỗ trợ JPG, PNG, WEBP.</p>
+                {file && <p className="mt-2 text-sm font-semibold text-gray-700">Đã chọn: {file.name}</p>}
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <FileInput
+                className="[&_input]:cursor-pointer [&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:bg-white"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+              <Button
+                type="button"
+                className="rounded-xl border border-primary bg-white px-5 font-heading font-bold text-primary hover:bg-blue-50"
+                size="sm"
+                onClick={handleUpdloadImage}
+                disabled={imageUploadProgress}
+              >
+                {imageUploadProgress ? (
+                  <div className="h-12 w-12">
+                    <CircularProgressbar
+                      value={imageUploadProgress}
+                      text={`${imageUploadProgress || 0}%`}
+                    />
+                  </div>
+                ) : (
+                  "Tải ảnh lên"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
         {imageUploadError && <Alert color="failure">{imageUploadError}</Alert>}
         {formData.image && (
-          <img
-            src={formData.image}
-            alt="upload"
-            className="w-full h-72 object-contain"
-          />
+          <div className="relative">
+            <img src={formData.image} alt="upload" className="w-full h-72 object-contain" />
+            <Button
+              type="button"
+              color="failure"
+              size="xs"
+              className="absolute top-2 right-2"
+              onClick={handleDeleteImage}
+            >
+              Xóa ảnh
+            </Button>
+          </div>
         )}
         {formData?.isFile ? (
-          <iframe
-            src={formData.content}
-            title="File Preview"
-            width="100%"
-            height="800px"
-          />
+          <iframe src={formData.content} title="File Preview" width="100%" height="800px" />
         ) : (
-          <div className="quill-editor">
+          <div className="quill-editor overflow-hidden rounded-xl border border-gray-200 bg-white [&_.ql-container]:rounded-b-xl [&_.ql-toolbar]:rounded-t-xl [&_.ql-toolbar]:border-gray-200">
             <ReactQuill
               modules={modules}
               theme="snow"
@@ -245,7 +263,7 @@ export default function UpdatePost() {
             />
           </div>
         )}
-        <Button type="submit" gradientDuoTone="purpleToPink">
+        <Button type="submit" className="w-full rounded-xl bg-primary py-3 font-heading font-bold text-white hover:bg-primary-dark">
           Đăng
         </Button>
         {publishError && (
@@ -259,6 +277,7 @@ export default function UpdatePost() {
           </Alert>
         )}
       </form>
+      </div>
     </div>
   );
 }

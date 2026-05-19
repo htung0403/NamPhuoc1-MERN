@@ -1,5 +1,7 @@
 import { Alert, Spinner } from 'flowbite-react';
 import React, { useState } from 'react'
+import { HiEye, HiEyeOff } from 'react-icons/hi';
+import logoImg from '../images/logo.png';
 import { useNavigate } from 'react-router-dom'
 import {useDispatch, useSelector} from 'react-redux'
 import { signInSuccess, signInStart, signInFailure } from '../redux/user/userSlice.js';
@@ -7,6 +9,7 @@ import { signInSuccess, signInStart, signInFailure } from '../redux/user/userSli
 
 export default function DangNhap() {
   const [formData, setFormData] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const {loading, error: errorMessage} = useSelector(state => state.user);
   const navigate = useNavigate();
@@ -48,71 +51,64 @@ export default function DangNhap() {
     }
   };
   return (
-    <div className='mt-[3rem]'>
-      <div className="flex justify-center">
-        <div className="relative text-center">
-          <h1 className="text-3xl md:text-4xl font-serif font-semibold">
-            ĐĂNG NHẬP TÀI KHOẢN
-          </h1>
-        <i className="mt-4 text-lg text-gray-600">Trường Tiểu học Nam Phước 1</i>
+    <div className='flex min-h-[calc(100vh-80px)] items-center justify-center bg-gradient-to-b from-blue-50 to-white px-4 py-10 font-body'>
+      <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-md">
+        <div className="mb-8 text-center">
+          <img src={logoImg} alt="Trường Tiểu học Nam Phước 1" className="mx-auto mb-4 h-20 w-20 object-contain" />
+          <h1 className="font-heading text-2xl font-bold text-primary">Đăng nhập tài khoản</h1>
+          <p className="mt-2 text-sm text-gray-500">Trường Tiểu học Nam Phước 1</p>
         </div>
-      </div>
 
-      <div className='mt-[3.5rem] flex justify-center'>
-        {/* left */}
-        <div className='md:w-[40%] w-full mx-4'>
-          <form className='flex flex-col space-y-4' onSubmit={handleSubmit}>
-            <input 
-              type="email" 
+        <form className='flex flex-col space-y-5' onSubmit={handleSubmit}>
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-gray-700">Số điện thoại</span>
+            <input
+              type="email"
               id='email'
-              placeholder="Email@gmail.com" 
-              className="w-full rounded-full border p-2 focus:outline-none focus:ring focus:border-blue-300" 
+              placeholder="Email hoặc số điện thoại"
+              className="w-full rounded-xl border border-gray-200 px-4 py-3 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
               onChange={handleChage}
             />
-            <input 
-              type="password" 
-              id='password'
-              placeholder="*********" 
-              className="w-full rounded-full border p-2 focus:outline-none focus:ring focus:border-blue-300" 
-              onChange={handleChage}
-            />
-            <button className="bg-black text-white rounded-full px-4 py-2 flex items-center justify-center" disabled={loading}>
-              {
-                loading ? (
-                  <>
-                  <Spinner size='sm'/>
-                  <span className='pl-3'>Loading...</span>
-                  </>
-                ) : 'Đăng nhập'
-              }
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6 ml-2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
-            </button>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-semibold text-gray-700">Mật khẩu</span>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                id='password'
+                placeholder="*********"
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-12 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                onChange={handleChage}
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 transition hover:text-primary"
+                onClick={() => setShowPassword((visible) => !visible)}
+                aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? <HiEyeOff className="h-5 w-5" /> : <HiEye className="h-5 w-5" />}
+              </button>
+            </div>
+          </label>
+          <button className="flex w-full items-center justify-center rounded-xl bg-primary py-3 font-heading font-bold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-70" disabled={loading}>
             {
-              errorMessage && (
-                <Alert className='flex justify-center items-center text-lg' color='failure'>
-                  {errorMessage}
-                </Alert>
-              )
+              loading ? (
+                <>
+                <Spinner size='sm'/>
+                <span className='pl-3'>Loading...</span>
+                </>
+              ) : 'Đăng nhập'
             }
-          </form>
-        </div>
-      </div>
-      
-      {/* <div className="flex justify-center items-center mt-10">
-        <div className="inline-flex items-center rounded-full bg-gray-100 px-4 py-2">
-          <span className="text-gray-700 font-medium">Quên mật khẩu ?</span>
-          <span className="ml-2 text-gray-500">ĐĂNG KÝ</span>
-          <Link to='/admin/dang-ky'>
-          <button className="bg-purple-500 text-white rounded-full ml-4 px-3 py-1 hover:bg-purple-600">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
           </button>
-          </Link>
-        </div>
-      </div> */}
+          {
+            errorMessage && (
+              <Alert className='flex justify-center items-center text-lg' color='failure'>
+                {errorMessage}
+              </Alert>
+            )
+          }
+        </form>
+      </div>
     </div>
   )
 }

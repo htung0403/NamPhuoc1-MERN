@@ -3,10 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import DashProfile from './components/DashProfile.jsx';
 import DashSidebar from './components/DashSidebar.jsx';
 import { useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import DashPosts from './components/DashPosts.jsx';
+import HomeImages from './HomeImages.jsx';
 import Cookies from 'js-cookie';
 import { signOutSuccess } from '../redux/user/userSlice.js';
-import useCheckAuth from "../../../api/utils/checkAuth";
+import useCheckAuth from "./checkAuth.js";
 
 
 
@@ -14,6 +16,7 @@ export default function Dashboard() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { currentUser } = useSelector((state) => state.user);
   const [tab, setTab] = useState('');
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
@@ -53,8 +56,8 @@ export default function Dashboard() {
   useCheckAuth();
 
   return(
-    <div className='min-h-screen flex flex-col md:flex-row'>
-      <div className='md:w-56'>
+    <div className='min-h-[calc(100vh-80px)] bg-blue-50/40 font-body md:flex'>
+      <div className='md:w-56 md:shrink-0'>
         {/* Side bar */}
         <DashSidebar/>
       </div>
@@ -62,6 +65,7 @@ export default function Dashboard() {
       {tab==='ho-so' && <DashProfile/>}
       {/* Post */}
       {tab === 'bai-dang' && <DashPosts/>}
+      {tab === 'anh-trang-chu' && currentUser?.isAdmin && <HomeImages/>}
     </div>
   )
 }

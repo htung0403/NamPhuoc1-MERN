@@ -1,22 +1,27 @@
-const User = require('../models/user.model.js');
-const bcryptjs = require('bcryptjs');
-const { errorHandler } = require('../utils/error.js');
-const jwt = require('jsonwebtoken');
+const bcryptjs = require("bcryptjs");
+const { errorHandler } = require("../utils/error.js");
+const jwt = require("jsonwebtoken");
+const { supabase, tables } = require("../config/supabase.js");
 
 module.exports = {
   signup: async (req, res, next) => {
-    const { username, email, password, fullName, isAdmin } = req.body;
+    const { username, email, password, fullName } = req.body;
 
-    if (!username || !email || !password || !fullName || username === "" || email === "" || fullName === "") {
+    if (
+      !username ||
+      !email ||
+      !password ||
+      !fullName ||
+      username === "" ||
+      email === "" ||
+      fullName === ""
+    ) {
       return next(errorHandler(400, "All fields required!"));
     }
 
     try {
-      // Hash the password
       const hashedPassword = await bcryptjs.hash(password, 10);
-
-      // Create a new user with default role 'phuhuynh'
-      const newUser = await User.create({
+      const { error } = await supabase.from(tables.users).insert({
         username,
         email,
         password: hashedPassword,
@@ -24,7 +29,13 @@ module.exports = {
         isAdmin: false, // Default role
       });
 
-      // Send a success response
+      if (error) {
+        if (error.code === "23505") {
+          return next(errorHandler(409, "Email hoặc username đã tồn tại"));
+        }
+        return next(errorHandler(500, error.message));
+      }
+
       res.status(201).json({ message: "User created successfully." });
     } catch (error) {
       next(error);
@@ -39,7 +50,16 @@ module.exports = {
     }
 
     try {
-      const validUser = await User.findOne({ where: { email } });
+      const { data: validUser, error } = await supabase
+        .from(tables.users)
+        .select("*")
+        .eq("email", email)
+        .maybeSingle();
+
+      if (error) {
+        return next(errorHandler(500, error.message));
+      }
+
       if (!validUser) {
         return next(errorHandler(404, "User not found"));
       }
@@ -50,19 +70,19 @@ module.exports = {
       const token = jwt.sign(
         { id: validUser.id, isAdmin: validUser.isAdmin },
         process.env.JWT_SECRET,
-        { expiresIn: '1d' } // Ensure the token has an expiration time
+        { expiresIn: "1d" }
       );
-      const { password: pass, ...rest } = validUser.toJSON();
+      const { password: pass, ...rest } = validUser;
 
       res
         .status(200)
         .cookie("access_token", token, {
           httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 24 * 60 * 60 * 1000 // 24 hours
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 24 * 60 * 60 * 1000,
         })
-        .json({ ...rest, token }); // Include the token in the response for debugging
+        .json({ ...rest, token });
     } catch (error) {
       next(error);
     }

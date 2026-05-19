@@ -4,7 +4,7 @@ import AdminHeader from '../admin/components/AdminHeader.jsx';
 
 const AdminLayout = ({ children }) => {
   return (
-    <div>
+    <div className="-mt-20">
       <AdminHeader/>
       <main>{children}</main>
     </div>

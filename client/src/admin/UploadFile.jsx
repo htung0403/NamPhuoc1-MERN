@@ -1,174 +1,212 @@
-import React, { useState } from 'react';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { app } from '../firebase.js';
-import DocViewer, { DocViewerRenderers } from 'react-doc-viewer';
-import { Alert, Button, FileInput, Select, TextInput } from 'flowbite-react';
-import { CircularProgressbar } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import { useNavigate } from 'react-router-dom';
-import useCheckAuth from "../../../api/utils/checkAuth";
+import { useState } from "react";
+import { HiOutlineDocumentText } from "react-icons/hi";
+import { uploadToCloudinary, deleteFromCloudinary, validateFile } from "../cloudinary";
+import { Alert, Button, FileInput, Select, TextInput } from "flowbite-react";
+import { CircularProgressbar } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
+import { useNavigate } from "react-router-dom";
+import useCheckAuth from "./checkAuth.js";
 
 const UploadFile = () => {
   const [file, setFile] = useState(null);
-  const [fileUrl, setFileUrl] = useState('');
+  const [fileUrl, setFileUrl] = useState("");
   const [uploadError, setUploadError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
-  const [formData, setFormData] = useState({ title: ''});
-  const [category, setCategory] = useState('uncategorized');
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({ title: "" });
+  const [category, setCategory] = useState("uncategorized");
+  const [error, setError] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const navigate = useNavigate();
   useCheckAuth();
 
+  const extractPublicId = (url) => {
+    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)/);
+    return match ? match[1].replace(/\.[^/.]+$/, "") : null;
+  };
+
   const handleUploadFile = async () => {
     try {
       if (!file) {
-        setUploadError('Chưa chọn tệp');
+        setUploadError("Chưa chọn tệp");
         return;
       }
-      if (file.type !== 'application/pdf') {
-        setUploadError('Chỉ cho phép tải lên tệp PDF');
+      const validation = validateFile(file, {
+        images: { maxSize: 0, allowedTypes: [] },
+        pdf: { maxSize: 25 * 1024 * 1024, allowedTypes: ["application/pdf"] },
+      });
+      if (!validation.valid) {
+        setUploadError(validation.error);
         return;
       }
       setUploadError(null);
-      const storage = getStorage(app);
-      const folder = 'pdf';
-      const fileName = `${folder}/${new Date().getTime()}-${file.name}`;
-      const storageRef = ref(storage, fileName);
-      const uploadTask = uploadBytesResumable(storageRef, file);
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          setUploadProgress(progress.toFixed(0));
-        },
-        (error) => {
-          setUploadError('Tải tệp thất bại');
-          setUploadProgress(null);
-        },
-        async () => {
-          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-          setUploadProgress(null);
-          setUploadError(null);
-          setFileUrl(downloadURL);
-        }
+      const downloadURL = await uploadToCloudinary(
+        file,
+        "pdf",
+        "raw",
+        (progress) => setUploadProgress(progress.toFixed(0))
       );
-    } catch (error) {
-      setUploadError('Đã xảy ra lỗi');
+      setUploadProgress(null);
+      setUploadError(null);
+      setFileUrl(downloadURL);
+    } catch {
+      setUploadError("Tải tệp thất bại");
+      setUploadProgress(null);
+    }
+  };
+
+  const handleDeleteFile = async () => {
+    const publicId = extractPublicId(fileUrl);
+    if (!publicId) {
+      setUploadError("Không thể xác định tệp để xóa");
+      return;
+    }
+    try {
+      setDeleting(true);
+      await deleteFromCloudinary(publicId, "raw");
+      setFileUrl("");
+      setFile(null);
+      setUploadError(null);
+    } catch {
+      setUploadError("Xóa tệp thất bại");
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleCreatePost = async () => {
-    if (category === 'uncategorized') {
-      setError('Vui lòng chọn một danh mục.');
+    if (category === "uncategorized") {
+      setError("Vui lòng chọn một danh mục.");
       return;
     }
     if (!fileUrl) {
-      setUploadError('Chưa tải lên tệp');
+      setUploadError("Chưa tải lên tệp");
       return;
     }
 
     try {
-      const res = await fetch('/api/post/create', {
-        method: 'POST',
+      const res = await fetch("/api/post/create", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           title: formData.title,
           content: fileUrl,
-          category: formData.category,
+          category,
           isFile: true,
         }),
       });
       if (res.ok) {
         const data = await res.json();
-        console.log('Post created:', data); // Kiểm tra phản hồi từ API
         setUploadError(null);
         navigate(`/${data.slug}`);
       } else {
         const postErrorData = await res.json();
         setUploadError(postErrorData.message);
       }
-    } catch (error) {
-      setUploadError('Đã xảy ra lỗi khi tạo bài đăng');
+    } catch {
+      setUploadError("Đã xảy ra lỗi khi tạo bài đăng");
     }
   };
 
   return (
-    <div className='p-3 max-w-[70rem] mx-auto min-h-screen'>
-      <h1 className='text-center text-3xl my-7 font-semibold'>Tải lên tệp</h1>
-      <form className='flex flex-col gap-4' onSubmit={(e) => { e.preventDefault(); handleCreatePost(); }}>
-        <div className='flex flex-col gap-4 sm:flex-row justify-between'>
-          <TextInput
-            type='text'
-            placeholder='Tiêu đề'
+    <div className="min-h-screen w-full bg-blue-50/40 p-4 md:p-8">
+      <div className="mx-auto max-w-6xl rounded-2xl bg-white p-8 shadow-md"><h1 className="mb-8 text-center font-heading text-2xl font-bold text-primary">Tải lên tệp</h1>
+      <form
+        className="flex flex-col gap-5"
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleCreatePost();
+        }}
+      >
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(260px,1fr)]">
+          <label className="block"><span className="mb-2 block text-sm font-semibold text-gray-700">Tiêu đề</span><TextInput
+            className="[&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:px-4 [&_input]:py-3 [&_input]:focus:border-primary [&_input]:focus:ring-2 [&_input]:focus:ring-primary/20"
+            type="text"
+            placeholder="Tiêu đề"
             required
-            id='title'
-            className='flex-1'
+            id="title"
             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
           />
-          <Select
+          </label>
+          <label className="block"><span className="mb-2 block text-sm font-semibold text-gray-700">Danh mục</span><Select
             value={category}
             onChange={(e) => {
               setCategory(e.target.value);
               setFormData({ ...formData, category: e.target.value });
             }}
+            className="[&_select]:rounded-xl [&_select]:border-gray-200 [&_select]:px-4 [&_select]:py-3 [&_select]:focus:border-primary [&_select]:focus:ring-2 [&_select]:focus:ring-primary/20"
             required
           >
-            <option value='uncategorized'>Chọn một danh mục</option>
-            <option value='tin-tuc'>Tin tức</option>
-            <option value='su-kien'>Sự kiện</option>
-            <option value='phu-huynh'>Phụ huynh</option>
+            <option value="uncategorized">Chọn một danh mục</option>
+            <option value="tin-tuc">Tin tức</option>
+            <option value="su-kien">Sự kiện</option>
+            <option value="phu-huynh">Phụ huynh</option>
           </Select>
+          </label>
         </div>
-        <div className='flex gap-4 items-center justify-between border-4 border-blue-300 border-dashed p-3'>
-          <FileInput
-            type='file'
-            accept='application/pdf'
-            onChange={(e) => setFile(e.target.files[0])}
-          />
-          <Button
-            type='button'
-            gradientDuoTone='cyanToBlue'
-            size='sm'
-            outline
-            onClick={handleUploadFile}
-            disabled={uploadProgress}
-          >
-            {uploadProgress ? (
-              <div className='w-16 h-16'>
-                <CircularProgressbar
-                  value={uploadProgress}
-                  text={`${uploadProgress || 0}%`}
-                />
+        <div className="rounded-2xl border border-dashed border-primary/40 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm transition hover:border-primary/70 hover:shadow-md">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-center gap-4 text-left">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <HiOutlineDocumentText className="h-8 w-8" />
               </div>
-            ) : (
-              'Tải tệp lên'
-            )}
-          </Button>
+              <div>
+                <p className="font-heading text-base font-bold text-primary">Tệp PDF đính kèm</p>
+                <p className="mt-1 text-sm text-gray-500">Chọn tệp PDF từ máy tính, dung lượng tối đa 25MB.</p>
+                {file && <p className="mt-2 text-sm font-semibold text-gray-700">Đã chọn: {file.name}</p>}
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <FileInput className="[&_input]:cursor-pointer [&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:bg-white" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files[0])} />
+              <Button
+                type="button"
+                className="rounded-xl border border-primary bg-white px-5 font-heading font-bold text-primary hover:bg-blue-50"
+                size="sm"
+                onClick={handleUploadFile}
+                disabled={uploadProgress}
+              >
+                {uploadProgress ? (
+                  <div className="h-12 w-12">
+                    <CircularProgressbar value={uploadProgress} text={`${uploadProgress || 0}%`} />
+                  </div>
+                ) : (
+                  "Tải tệp lên"
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
-        {uploadError && <Alert color='failure'>{uploadError}</Alert>}
+        {uploadError && <Alert color="failure">{uploadError}</Alert>}
         {fileUrl && (
-          <div className='mt-4'>
-            <h2 className='text-xl'>Xem tệp:</h2>
-            <iframe
-              src={fileUrl}
-              style={{ width: '100%', height: '800px' }}
-              title="File Viewer"
-            />
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-xl">Xem tệp:</h2>
+              <Button
+                type="button"
+                className="rounded-lg border border-red-200 bg-white text-red-500 hover:bg-red-50"
+                size="sm"
+                onClick={handleDeleteFile}
+                disabled={deleting}
+              >
+                {deleting ? "Đang xóa..." : "Xóa tệp"}
+              </Button>
+            </div>
+            <iframe src={fileUrl} style={{ width: "100%", height: "800px" }} title="File Viewer" />
           </div>
         )}
-        <Button type='submit' gradientDuoTone='purpleToPink'>
+        <Button type="submit" className="w-full rounded-xl bg-primary py-3 font-heading font-bold text-white hover:bg-primary-dark">
           Đăng
         </Button>
         {error && (
-          <Alert className='mt-5' color='failure'>
+          <Alert className="mt-5" color="failure">
             {error}
           </Alert>
         )}
       </form>
+      </div>
     </div>
   );
 };

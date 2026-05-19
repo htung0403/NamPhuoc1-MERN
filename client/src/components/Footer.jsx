@@ -1,33 +1,37 @@
-import { Footer } from "flowbite-react"
-import { BsFacebook } from 'react-icons/bs'
+import { Footer } from "flowbite-react";
+import { BsFacebook } from "react-icons/bs";
 
 export default function FooterCom() {
   return (
-    <Footer container className="bg-cyan-200 mt-10">
-        <div className="w-full w-max-7xl mx-auto">
-            <div className="grid grid-cols-2 gap-4 sm:mt-4 sm:gap-6 md:mx-[120px] mx-2 md:text-sm text-xs">
-                <div>
-                    <Footer.Title className="text-black font-bold" title="Thông tin"/>
-                    <p><strong>Hiệu trưởng:</strong> Võ Quý
-                    <br/><strong>Website:</strong> http://namphuoc1.edu.vn / <strong>Email:</strong> voquy711np1@gmail.com
-                    <br/><strong>Số tài khoản:</strong>
-                    {/* <br/>1462 4311 200 00065 tại Ngân hàng Nông nghiệp và Phát triển nông thôn - Chi nhánh Tây Đô
-                    <br/>Đơn vị thụ hưởng: Trường Tiểu học Đoàn Thị Điểm - Hà Nội */}
-                    <br/>Địa chỉ email: info@np1.edu.vn</p>
-                </div>
-                <div>
-                    <Footer.Title className="text-black font-bold" title="Địa chỉ"/>
-                    <p>
-                    Nam Phước, Duy Xuyên, Quảng Nam
-                    <br/>Hotline: (024) 3787 0338
-                    </p><br/>
-                    <Footer.Icon href="#" icon={BsFacebook}/>
-                </div>
-                
-            </div>
-            <Footer.Copyright className="text-black font-bold" href="#" by="Trường Tiểu học Nam Phước 1 - Duy Xuyên." year={new Date().getFullYear()}/>
+    <Footer container className="mt-10 bg-blue-50 px-4 py-8">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="grid grid-cols-1 gap-6 text-sm text-slate-700 sm:grid-cols-2">
+          <div className="school-card p-5 shadow-none">
+            <Footer.Title className="font-heading font-extrabold text-primary" title="Thông tin" />
+            <p className="mt-3 leading-7">
+              <strong>Hiệu trưởng:</strong> Võ Quý
+              <br />
+              <strong>Website:</strong> namphuoc1.edu.vn
+              <br />
+              <strong>Email:</strong> voquy711np1@gmail.com
+            </p>
+          </div>
+          <div className="school-card p-5 shadow-none">
+            <Footer.Title className="font-heading font-extrabold text-primary" title="Địa chỉ" />
+            <p className="mt-3 leading-7">
+              Nam Phước, Đà Nẵng
+              <br />
+              Hotline: (024) 3787 0338
+            </p>
+          </div>
         </div>
-        
+        <Footer.Copyright
+          className="mt-6 text-center text-xs font-bold text-slate-600 sm:text-sm"
+          href="#"
+          by="Trường Tiểu học Nam Phước 1 - Đà Nẵng."
+          year={new Date().getFullYear()}
+        />
+      </div>
     </Footer>
-  )
+  );
 }

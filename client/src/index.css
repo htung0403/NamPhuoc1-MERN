@@ -1,6 +1,20 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@500;600;700;800&family=Nunito:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --primary: #0077c8;
+  --primary-dark: #006bb4;
+  --accent: #f5a623;
+  --accent-dark: #dd951f;
+  --surface: #ffffff;
+  --soft-blue: #eef8ff;
+  --text-main: #172033;
+  --text-muted: #5f6f85;
+  --card-radius: 12px;
+  --button-radius: 8px;
+}
 
 #header {
   transition: transform 0.3s ease-in-out;
@@ -8,6 +22,86 @@
 
 body {
   padding-top: 80px;
+  margin: 0;
+  color: var(--text-main);
+  background: linear-gradient(180deg, #f7fcff 0%, #ffffff 36%);
+  font-family: 'Nunito', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.school-container {
+  width: min(100% - 2rem, 1300px);
+  margin-inline: auto;
+}
+
+.school-section-title {
+  color: var(--primary);
+  font-family: 'Be Vietnam Pro', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.school-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 0.75rem;
+  height: 2.5rem;
+  margin-right: 1rem;
+  border-radius: 999px;
+  background: var(--accent);
+  vertical-align: middle;
+}
+
+.school-card {
+  border-radius: var(--card-radius);
+  background: var(--surface);
+  box-shadow: 0 14px 40px rgba(0, 119, 200, 0.12);
+}
+
+.school-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--button-radius);
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 800;
+  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.school-button:hover {
+  background: var(--primary-dark);
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0, 119, 200, 0.22);
+  transform: translateY(-1px);
+}
+
+.school-button-accent {
+  background: var(--accent);
+}
+
+.school-button-accent:hover {
+  background: var(--accent-dark);
+}
+
+.news-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .news-card-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 .footer-absolute {
   position: absolute;

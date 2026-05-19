@@ -11,7 +11,7 @@ const PhuHuynh = () => {
 
   const API_URL = process.env.NODE_ENV === 'production' 
     ? 'https://namphuoc1.edu.vn/api' 
-    : 'http://localhost:3000/api';
+    : 'http://localhost:3005/api';
 
   useEffect(() => {
     const fetchPosts = async () => {

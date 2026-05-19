@@ -22,7 +22,7 @@ export default function DashPosts() {
   const [postIdToDelete, setPostIdToDelete] = useState('');
   const API_URL = process.env.NODE_ENV === 'production' 
     ? 'https://namphuoc1.edu.vn/api' 
-    : 'http://localhost:3000/api';
+    : 'http://localhost:3005/api';
 
   const getCategoryDisplayName = (category) => {
     switch (category) {
@@ -99,71 +99,69 @@ export default function DashPosts() {
     }
   };
   return (
-    <div className="table-auto overflow-x-scroll md:mx-auto p-3 scrollbar scrollbar-track-slate-100 scrollbar-thumb-slate-300">
+    <div className="w-full overflow-x-auto p-4 md:p-8">
       {currentUser.isAdmin && userPosts.length > 0 ? (
         <>
-          <Table hoverable className="shadow-md">
-            <TableHead>
-              <TableHeadCell>Ngày đăng</TableHeadCell>
-              <TableHeadCell>Ảnh bìa</TableHeadCell>
-              <TableHeadCell>Tiêu đề</TableHeadCell>
-              <TableHeadCell>Danh mục</TableHeadCell>
-              <TableHeadCell>Xóa</TableHeadCell>
-              <TableHeadCell>
-                <span>Chỉnh sửa</span>
-              </TableHeadCell>
-            </TableHead>
-            {userPosts.map((post) => (
-              <TableBody key={post.id} className="divide-y">
-                <TableRow className="bg-white">
-                  <TableCell>
-                    {new Date(post.updatedAt).toLocaleDateString("en-GB")}
-                  </TableCell>
-                  <TableCell>
-                    <Link to={`/${post.slug}`}>
-                      <img src={post.image} alt={post.title} className="w-20 h-10 object-cover bg-gray-500" />
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <Link className="font-medium text-gray-900" to={`/${post.slug}`}>{post.title}</Link>
-                  </TableCell>
-                  <TableCell>
-                    {getCategoryDisplayName(post.category)}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      onClick={() => {
-                        setShowModal(true);
-                        setPostIdToDelete(post.id);
-                      }}
-                      className='font-medium text-red-500 hover:underline cursor-pointer'
-                    >
-                      Xóa
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Link className="text-teal-500 hover:underline" to={`/sua-bai-viet/${post.id}`}>
-                        <span>
-                            Chỉnh sửa
-                        </span>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            ))}
-          </Table>
-          {
-            showMore && (
-              <div className="flex justify-center">
-                <button onClick={handleShowMore} className="w-full text-teal-500 self-center text-sm py-7">
-                  Xem thêm
-                </button>
-              </div>
-            )
-          }
+          <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-primary font-heading text-sm font-semibold uppercase tracking-wide text-white">
+                <tr>
+                  <th className="px-5 py-4">Ngày đăng</th>
+                  <th className="px-5 py-4">Ảnh bìa</th>
+                  <th className="px-5 py-4">Tiêu đề</th>
+                  <th className="px-5 py-4">Danh mục</th>
+                  <th className="px-5 py-4">Xóa</th>
+                  <th className="px-5 py-4">Chỉnh sửa</th>
+                </tr>
+              </thead>
+              <tbody>
+                {userPosts.map((post, index) => (
+                  <tr key={post.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"} transition hover:bg-blue-50`}>
+                    <td className="px-5 py-4 text-gray-600">{new Date(post.updatedAt).toLocaleDateString("en-GB")}</td>
+                    <td className="px-5 py-4">
+                      <Link to={`/${post.slug}`}>
+                        <img src={post.image} alt={post.title} className="h-10 w-16 rounded-lg bg-gray-100 object-cover" />
+                      </Link>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Link className="font-semibold text-gray-900 hover:text-primary" to={`/${post.slug}`}>{post.title}</Link>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600">{getCategoryDisplayName(post.category)}</td>
+                    <td className="px-5 py-4">
+                      <span
+                        onClick={() => {
+                          setShowModal(true);
+                          setPostIdToDelete(post.id);
+                        }}
+                        className="inline-flex cursor-pointer rounded-lg border border-red-200 px-3 py-1 text-sm font-semibold text-red-500 transition hover:bg-red-50"
+                      >
+                        Xóa
+                      </span>
+                    </td>
+                    <td className="px-5 py-4">
+                      <Link className="inline-flex rounded-lg border border-primary/30 px-3 py-1 text-sm font-semibold text-primary transition hover:bg-blue-50" to={`/sua-bai-viet/${post.id}`}>
+                        Chỉnh sửa
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {showMore && (
+            <div className="flex justify-center">
+              <button onClick={handleShowMore} className="w-full py-7 text-sm font-semibold text-primary hover:underline">
+                Xem thêm
+              </button>
+            </div>
+          )}
         </>
       ) : (
-        <p>Bạn không có bài đăng</p>
+        <div className="mx-auto flex max-w-md flex-col items-center justify-center rounded-2xl bg-white p-10 text-center shadow-sm">
+          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-blue-50 text-4xl text-primary">▣</div>
+          <p className="font-heading text-lg font-bold text-gray-800">Chưa có bài đăng nào</p>
+          <p className="mt-2 text-sm text-gray-500">Các bài viết mới sẽ hiển thị tại đây.</p>
+        </div>
       )}
       <Modal
         show={showModal}

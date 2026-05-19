@@ -1,30 +1,29 @@
-import {
-  Button,
-  Navbar,
-  NavbarCollapse,
-  TextInput,
-  Dropdown,
-} from "flowbite-react";
-import React, { useState, useEffect } from "react";
+import { Button, Navbar, TextInput } from "flowbite-react";
+import React, { useEffect, useState } from "react";
+import { AiOutlineRight, AiOutlineSearch } from "react-icons/ai";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AiOutlineSearch, AiOutlineRight } from "react-icons/ai";
-import "../index.css";
 import logoImg from "../images/logo.png";
+import "../index.css";
+
+const dropdownClass =
+  "absolute left-0 top-full z-50 hidden w-64 rounded-card border border-blue-50 bg-white p-2 shadow-xl group-hover:block";
+const mobileDropdownClass =
+  "static mt-2 block w-full rounded-card border border-blue-50 bg-blue-50/60 p-2 shadow-none";
+const dropdownLinkClass =
+  "block rounded-button px-4 py-2.5 text-sm font-extrabold text-slate-700 transition hover:bg-blue-50 hover:text-primary";
+const navItemClass =
+  "block w-full rounded-button px-3 py-2.5 text-left font-heading text-sm font-extrabold text-slate-700 transition hover:bg-blue-50 hover:text-primary lg:w-auto lg:text-center";
 
 export default function Header() {
-  const path = useLocation().pathname;
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeMenu, setActiveMenu] = useState(null);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -32,17 +31,14 @@ export default function Header() {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     const searchTermFromUrl = urlParams.get("searchTerm");
-    if (searchTermFromUrl) {
-      setSearchTerm(searchTermFromUrl);
-    }
+    if (searchTermFromUrl) setSearchTerm(searchTermFromUrl);
   }, [location.search]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = (event) => {
+    event.preventDefault();
     const urlParams = new URLSearchParams(location.search);
     urlParams.set("searchTerm", searchTerm);
-    const searchQuery = urlParams.toString();
-    navigate(`/search?${searchQuery}`);
+    navigate(`/search?${urlParams.toString()}`);
   };
 
   const toggleMenu = (menu) => {
@@ -54,163 +50,116 @@ export default function Header() {
   };
 
   return (
-    <Navbar className="border-b-2 fixed top-0 left-0 w-full z-20 bg-white">
-      <Link to="/" className="self-center">
-        <img
-          src={logoImg}
-          alt="Logo"
-          style={{ height: "4rem" }}
-          className="h-16 sm:h-8 md:ml-[100px] ml-3"
-        />
+    <Navbar className="fixed left-0 top-0 z-20 w-full border-b border-blue-100 bg-white/95 px-2 py-2 shadow-sm backdrop-blur sm:px-3">
+      <Link to="/" className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3 lg:flex-none">
+        <img src={logoImg} alt="Logo Trường Tiểu học Nam Phước 1" className="h-10 w-10 flex-shrink-0 object-contain sm:h-14 sm:w-14" />
+        <div className="min-w-0 leading-tight">
+          <p className="truncate font-heading text-[13px] font-extrabold text-primary sm:text-base">
+            Trường Tiểu học Nam Phước 1
+          </p>
+          <p className="hidden text-xs font-semibold text-slate-500 sm:block">
+            Nam Phước, Đà Nẵng
+          </p>
+        </div>
       </Link>
-      <Navbar.Toggle />
-      <Navbar.Collapse>
+
+      <div className="flex flex-shrink-0 items-center gap-1.5 sm:gap-2 lg:order-2">
+        <form onSubmit={handleSubmit} className="hidden lg:block">
+          <TextInput
+            type="text"
+            placeholder="Tìm kiếm..."
+            rightIcon={AiOutlineSearch}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="w-52"
+          />
+        </form>
+        <Button className="hidden h-10 w-10 rounded-button border-primary text-primary sm:inline-flex lg:hidden" color="light" pill>
+          <AiOutlineSearch aria-hidden="true" />
+        </Button>
+        <Navbar.Toggle className="rounded-button text-primary hover:bg-blue-50 focus:ring-primary" />
+      </div>
+
+      <Navbar.Collapse className="mt-3 max-h-[calc(100vh-76px)] overflow-y-auto rounded-card border border-blue-50 bg-white p-2 shadow-lg lg:order-1 lg:mt-0 lg:max-h-none lg:overflow-visible lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+        <form onSubmit={handleSubmit} className="mb-3 block lg:hidden">
+          <TextInput
+            type="text"
+            placeholder="Tìm kiếm..."
+            rightIcon={AiOutlineSearch}
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+          />
+        </form>
         <div className="relative group">
-          <div
-            className="py-3 font-bold text-[16px] font-sans cursor-pointer title-header"
-            onClick={isMobile ? () => toggleMenu("gioi-thieu") : null}
+          <button
+            type="button"
+            className={navItemClass}
+            onClick={isMobile ? () => toggleMenu("gioi-thieu") : undefined}
           >
             GIỚI THIỆU
-          </div>
-          <div
-            className={`absolute ${isMobile ? (activeMenu === "gioi-thieu" ? "block" : "hidden") : "hidden group-hover:block"} bg-white shadow-lg w-60 z-50`}
-          >
-            <div className="py-1">
-              <Link
-                to="/gioi-thieu/thu-ngo"
-                className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-300"
-              >
-                THÔNG ĐIỆP
-              </Link>
-            </div>
-            <div className="py-1 relative sub-menu">
-              <div
-                className="px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-300 cursor-pointer flex justify-between items-center"
-                onClick={
-                  isMobile ? () => toggleSubMenu("co-cau-to-chuc") : null
-                }
+          </button>
+          <div className={isMobile && activeMenu === "gioi-thieu" ? mobileDropdownClass : dropdownClass}>
+            <Link to="/gioi-thieu/thu-ngo" className={dropdownLinkClass}>
+              THÔNG ĐIỆP
+            </Link>
+            <div className="relative sub-menu">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between rounded-button px-4 py-2 text-left text-sm font-extrabold text-slate-700 transition hover:bg-blue-50 hover:text-primary"
+                onClick={isMobile ? () => toggleSubMenu("co-cau-to-chuc") : undefined}
               >
                 CƠ CẤU TỔ CHỨC
                 <AiOutlineRight />
-              </div>
+              </button>
               <div
-                className={`absolute left-full top-0 ${isMobile ? (activeSubMenu === "co-cau-to-chuc" ? "block" : "hidden") : "hidden sub-menu-hover:block z-50"} bg-white shadow-lg md:w-60 w-30`}
+                className={`${isMobile ? (activeSubMenu === "co-cau-to-chuc" ? "block" : "hidden") : "absolute left-full top-0 hidden w-64 rounded-card border border-blue-50 bg-white p-2 shadow-xl sub-menu-hover:block"}`}
               >
-                <div className="py-1">
-                  <Link
-                    to="/chi-bo-dang"
-                    className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-300"
-                  >
-                    CHI BỘ ĐẢNG
-                  </Link>
-                </div>
-                <div className="py-1">
-                  <Link
-                    to="/ban-giam-hieu"
-                    className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-300"
-                  >
-                    BAN GIÁM HIỆU
-                  </Link>
-                </div>
-                <div className="py-1">
-                  <Link
-                    to="/ban-chap-hanh-cong-doan"
-                    className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-300"
-                  >
-                    BAN CHẤP HÀNH CÔNG ĐOÀN
-                  </Link>
-                </div>
-                <div className="py-1">
-                  <Link
-                    to="/cac-to-chuyen-mon"
-                    className="block px-4 py-2 md:text-[14px] font-sans font-bold hover:bg-gray-300"
-                  >
-                    CÁC TỔ CHUYÊN MÔN
-                  </Link>
-                </div>
+                <Link to="/chi-bo-dang" className={dropdownLinkClass}>CHI BỘ ĐẢNG</Link>
+                <Link to="/ban-giam-hieu" className={dropdownLinkClass}>BAN GIÁM HIỆU</Link>
+                <Link to="/ban-chap-hanh-cong-doan" className={dropdownLinkClass}>BAN CHẤP HÀNH CÔNG ĐOÀN</Link>
+                <Link to="/cac-to-chuyen-mon" className={dropdownLinkClass}>CÁC TỔ CHUYÊN MÔN</Link>
               </div>
             </div>
           </div>
         </div>
+
+        <Link to="/chuong-trinh-tieu-chuan-bo-gddt" className={navItemClass}>
+          CHƯƠNG TRÌNH
+        </Link>
+
         <div className="relative group">
-          <Link
-            to="/chuong-trinh-tieu-chuan-bo-gddt"
-            className="py-3 font-bold text-[16px] font-sans cursor-pointer"
-          >
-            <div className="py-3 font-bold text-[1rem] font-sans cursor-pointer">
-              CHƯƠNG TRÌNH
-            </div>
-          </Link>
-        </div>
-        <div className="relative group">
-          <div
-            className="py-3 font-bold text-[16px] font-sans cursor-pointer"
-            onClick={isMobile ? () => toggleMenu("phu-huynh") : null}
+          <button
+            type="button"
+            className={navItemClass}
+            onClick={isMobile ? () => toggleMenu("phu-huynh") : undefined}
           >
             PHỤ HUYNH
-          </div>
-          <div
-            className={`absolute ${isMobile ? (activeMenu === "phu-huynh" ? "block" : "hidden") : "hidden group-hover:block"} bg-white shadow-lg w-60 z-50`}
-          >
-            <div className="py-2">
-              <Link
-                to="/phu-huynh"
-                className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-200"
-              >
-                THÔNG BÁO CHUNG
-              </Link>
-            </div>
+          </button>
+          <div className={isMobile && activeMenu === "phu-huynh" ? mobileDropdownClass : dropdownClass}>
+            <Link to="/phu-huynh" className={dropdownLinkClass}>
+              THÔNG BÁO CHUNG
+            </Link>
           </div>
         </div>
+
         <div className="relative group">
-          <div
-            className="py-3 font-bold text-[16px] font-sans cursor-pointer"
-            onClick={isMobile ? () => toggleMenu("hoat-dong") : null}
+          <button
+            type="button"
+            className={navItemClass}
+            onClick={isMobile ? () => toggleMenu("hoat-dong") : undefined}
           >
             HOẠT ĐỘNG
-          </div>
-          <div
-            className={`absolute ${isMobile ? (activeMenu === "hoat-dong" ? "block" : "hidden") : "hidden group-hover:block"} bg-white shadow-lg w-60 z-50`}
-          >
-            <div className="py-2">
-              <Link
-                to="/tin-tuc"
-                className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-200"
-              >
-                TIN TỨC
-              </Link>
-            </div>
-            <div className="py-2">
-              <Link
-                to="/su-kien"
-                className="block px-4 py-2 text-[14px] font-sans font-bold hover:bg-gray-200"
-              >
-                SỰ KIỆN
-              </Link>
-            </div>
+          </button>
+          <div className={isMobile && activeMenu === "hoat-dong" ? mobileDropdownClass : dropdownClass}>
+            <Link to="/tin-tuc" className={dropdownLinkClass}>TIN TỨC</Link>
+            <Link to="/su-kien" className={dropdownLinkClass}>SỰ KIỆN</Link>
           </div>
         </div>
-        <div className="relative group">
-          <Link to="/lien-he">
-            <div className="py-3 font-bold text-[16px] font-sans cursor-pointer">
-              LIÊN HỆ
-            </div>
-          </Link>
-        </div>
+
+        <Link to="/lien-he" className={navItemClass}>
+          LIÊN HỆ
+        </Link>
       </Navbar.Collapse>
-      <form onSubmit={handleSubmit}>
-        <TextInput
-          type="text"
-          placeholder="Search..."
-          rightIcon={AiOutlineSearch}
-          className="hidden lg:inline"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </form>
-      <Button className="w-12 h-10 lg:hidden" color="gray" pill>
-        <AiOutlineSearch />
-      </Button>
     </Navbar>
   );
 }

@@ -14,7 +14,7 @@ export default function AdminHeader() {
   const { currentUser } = useSelector((state) => state.user);
   const API_URL = process.env.NODE_ENV === 'production' 
     ? 'https://namphuoc1.edu.vn/api' 
-    : 'http://localhost:3000/api';
+    : 'http://localhost:3005/api';
   const handleSignout = async () => {
     try {
       const res = await fetch(`${API_URL}/user/signout`, {
@@ -33,23 +33,23 @@ export default function AdminHeader() {
     }
   };
   return (
-    <Navbar className='border-b-2 py-4 relative z-50'>
+    <Navbar className='relative z-50 border-b border-blue-100 bg-white py-3 shadow-sm'>
         <Link to="/" className='self-center'>
-          <img src={logoImg} alt="Logo" style={{ height: '4rem'}} className='h-16 sm:h-8 md:ml-[100px] ml-3' />
+          <img src={logoImg} alt="Logo" className='ml-3 h-14 w-14 object-contain md:ml-[100px]' />
         </Link>
         <Navbar.Toggle/>
         <Navbar.Collapse>
           <div className='relative group'>
               <Link to='/create-post'>
-                <div className='py-3 font-bold text-[16px] font-sans cursor-pointer'>
+                <div className='cursor-pointer rounded-xl border border-primary px-4 py-2 font-heading text-sm font-bold text-primary transition hover:bg-blue-50'>
                   ĐĂNG BÀI VIẾT
                 </div>
               </Link>
           </div>
           <div className='relative group'>
               <Link to='/upload-file'>
-                <div className='py-3 font-bold text-[16px] font-sans cursor-pointer'>
-                  ĐĂNG TỆP PDF (.pdf)
+                <div className='cursor-pointer rounded-xl border border-primary px-4 py-2 font-heading text-sm font-bold text-primary transition hover:bg-blue-50'>
+                  ĐĂNG TỆP PDF
                 </div>
               </Link>
           </div>
@@ -60,7 +60,7 @@ export default function AdminHeader() {
             inline
             label= {
                 <Avatar
-                className='cursor-pointer border-slate-600 border-2'
+                className='cursor-pointer rounded-full ring-0 transition hover:ring-2 hover:ring-primary'
                 alt='user' 
                 img={currentUser.profilePicture}
                 rounded/>
@@ -79,7 +79,7 @@ export default function AdminHeader() {
             </Dropdown>
         ): (
             <Link to='/admin/dang-nhap'>
-                <Button gradientDuoTone='purpleToBlue' outline>
+                <Button className='border border-primary bg-white text-primary hover:bg-blue-50'>
                     Đăng nhập
                 </Button>
             </Link>
