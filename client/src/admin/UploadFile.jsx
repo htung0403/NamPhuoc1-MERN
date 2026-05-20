@@ -144,6 +144,7 @@ const UploadFile = () => {
             <option value="tin-tuc">Tin tức</option>
             <option value="su-kien">Sự kiện</option>
             <option value="phu-huynh">Phụ huynh</option>
+            <option value="van-ban-cong-khai">Văn bản công khai</option>
           </Select>
           </label>
         </div>

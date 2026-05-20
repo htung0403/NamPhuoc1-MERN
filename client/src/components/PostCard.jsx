@@ -8,6 +8,8 @@ export const getCategoryDisplayName = (category) => {
       return "Sự kiện";
     case "phu-huynh":
       return "Phụ huynh";
+    case "van-ban-cong-khai":
+      return "Văn bản công khai";
     default:
       return category || "Tin trường";
   }

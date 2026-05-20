@@ -32,6 +32,8 @@ export default function DashPosts() {
         return 'Sự Kiện';
       case 'phu-huynh':
         return 'Phụ Huynh';
+      case 'van-ban-cong-khai':
+        return 'Văn Bản Công Khai';
       default:
         return category;
     }

@@ -127,6 +127,10 @@ export default function Header() {
           CHƯƠNG TRÌNH
         </Link>
 
+        <Link to="/van-ban-cong-khai" className={navItemClass}>
+          VĂN BẢN CÔNG KHAI
+        </Link>
+
         <div className="relative group">
           <button
             type="button"

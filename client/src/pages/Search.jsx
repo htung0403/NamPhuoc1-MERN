@@ -95,6 +95,7 @@ export default function Search() {
     "tin-tuc": "Tin tức",
     "su-kien": "Sự kiện",
     "phu-huynh": "Phụ huynh",
+    "van-ban-cong-khai": "Văn bản công khai",
   }[sidebarData.category];
 
   return (
@@ -141,6 +142,7 @@ export default function Search() {
                 <option value="tin-tuc">Tin tức</option>
                 <option value="su-kien">Sự kiện</option>
                 <option value="phu-huynh">Phụ huynh</option>
+                <option value="van-ban-cong-khai">Văn bản công khai</option>
               </Select>
             </div>
 

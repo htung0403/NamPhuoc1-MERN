@@ -26,6 +26,7 @@ import BanChapHanhCongDoan from './pages/BanChapHanhCongDoan';
 import BanGiamHieu from './pages/BanGiamHieu';
 import ChiBoDang from './pages/ChiBoDang';
 import PhuHuynh from './pages/PhuHuynh';
+import VanBanCongKhai from './pages/VanBanCongKhai';
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
         <Route path='/ban-giam-hieu' element={<PublicLayout><BanGiamHieu /></PublicLayout>} />
         <Route path='/chi-bo-dang' element={<PublicLayout><ChiBoDang /></PublicLayout>} />
         <Route path='/phu-huynh' element={<PublicLayout><PhuHuynh /></PublicLayout>} />
+        <Route path='/van-ban-cong-khai' element={<PublicLayout><VanBanCongKhai /></PublicLayout>} />
         <Route path='/admin/dang-nhap' element={<AdminLayout><DangNhap /></AdminLayout>} />
         <Route path='/:postSlug' element= {<PublicLayout><PostPage/></PublicLayout>} />
         <Route path='/search' element= {<PublicLayout><Search/></PublicLayout>} />

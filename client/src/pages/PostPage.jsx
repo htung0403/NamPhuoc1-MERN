@@ -75,6 +75,8 @@ export default function PostPage() {
         return "Sự kiện";
       case "phu-huynh":
         return "Phụ huynh";
+      case "van-ban-cong-khai":
+        return "Văn bản công khai";
       default:
         return category || "Tin trường";
     }
@@ -102,6 +104,7 @@ export default function PostPage() {
     { slug: "tin-tuc", label: "Tin tức" },
     { slug: "su-kien", label: "Sự kiện" },
     { slug: "phu-huynh", label: "Phụ huynh" },
+    { slug: "van-ban-cong-khai", label: "Văn bản công khai" },
   ];
 
   const isFilePost = post?.isFile || isPdfUrl(post?.content);
