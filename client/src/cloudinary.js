@@ -134,6 +134,69 @@ export const uploadToCloudinary = async (file, folder = 'uploads', resourceType 
   return uploadWithRetry(0);
 };
 
+export const uploadPdfToStorage = async (file, onProgress = null) => {
+  const validation = validateFile(file, {
+    images: { maxSize: 0, allowedTypes: [] },
+    pdf: {
+      maxSize: 20 * 1024 * 1024,
+      allowedTypes: ['application/pdf']
+    }
+  });
+
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  if (onProgress) {
+    onProgress(10);
+  }
+
+  const response = await fetch('/api/storage/pdf', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/pdf',
+      'X-File-Name': encodeURIComponent(file.name)
+    },
+    credentials: 'include',
+    body: file
+  });
+
+  if (onProgress) {
+    onProgress(90);
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Tải PDF thất bại');
+  }
+
+  const data = await response.json();
+
+  if (onProgress) {
+    onProgress(100);
+  }
+
+  return data;
+};
+
+export const deletePdfFromStorage = async (storagePath) => {
+  const response = await fetch('/api/storage/pdf', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify({ path: storagePath })
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'Xóa PDF thất bại');
+  }
+
+  return response.json();
+};
+
 export const deleteFromCloudinary = async (publicId, resourceType = 'image') => {
   const response = await fetch(`${API_BASE}/delete`, {
     method: 'POST',

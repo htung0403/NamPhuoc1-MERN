@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { HiOutlineDocumentText } from "react-icons/hi";
-import { uploadToCloudinary, deleteFromCloudinary, validateFile } from "../cloudinary";
+import { deletePdfFromStorage, uploadPdfToStorage, validateFile } from "../cloudinary";
 import { Alert, Button, FileInput, Select, TextInput } from "flowbite-react";
 import { CircularProgressbar } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import { useNavigate } from "react-router-dom";
 import useCheckAuth from "./checkAuth.js";
 
+const MAX_PDF_FILE_SIZE = 20 * 1024 * 1024;
+
 const UploadFile = () => {
   const [file, setFile] = useState(null);
   const [fileUrl, setFileUrl] = useState("");
+  const [fileStoragePath, setFileStoragePath] = useState("");
   const [uploadError, setUploadError] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [formData, setFormData] = useState({ title: "" });
@@ -20,11 +23,6 @@ const UploadFile = () => {
   const navigate = useNavigate();
   useCheckAuth();
 
-  const extractPublicId = (url) => {
-    const match = url.match(/\/upload\/(?:v\d+\/)?(.+)/);
-    return match ? match[1].replace(/\.[^/.]+$/, "") : null;
-  };
-
   const handleUploadFile = async () => {
     try {
       if (!file) {
@@ -33,38 +31,37 @@ const UploadFile = () => {
       }
       const validation = validateFile(file, {
         images: { maxSize: 0, allowedTypes: [] },
-        pdf: { maxSize: 25 * 1024 * 1024, allowedTypes: ["application/pdf"] },
+        pdf: { maxSize: MAX_PDF_FILE_SIZE, allowedTypes: ["application/pdf"] },
       });
       if (!validation.valid) {
         setUploadError(validation.error);
         return;
       }
       setUploadError(null);
-      const downloadURL = await uploadToCloudinary(
+      const uploadedFile = await uploadPdfToStorage(
         file,
-        "pdf",
-        "raw",
         (progress) => setUploadProgress(progress.toFixed(0))
       );
       setUploadProgress(null);
       setUploadError(null);
-      setFileUrl(downloadURL);
-    } catch {
-      setUploadError("Tải tệp thất bại");
+      setFileUrl(uploadedFile.url);
+      setFileStoragePath(uploadedFile.path);
+    } catch (uploadError) {
+      setUploadError(uploadError.message || "Tải tệp thất bại");
       setUploadProgress(null);
     }
   };
 
   const handleDeleteFile = async () => {
-    const publicId = extractPublicId(fileUrl);
-    if (!publicId) {
+    if (!fileStoragePath) {
       setUploadError("Không thể xác định tệp để xóa");
       return;
     }
     try {
       setDeleting(true);
-      await deleteFromCloudinary(publicId, "raw");
+      await deletePdfFromStorage(fileStoragePath);
       setFileUrl("");
+      setFileStoragePath("");
       setFile(null);
       setUploadError(null);
     } catch {
@@ -156,12 +153,21 @@ const UploadFile = () => {
               </div>
               <div>
                 <p className="font-heading text-base font-bold text-primary">Tệp PDF đính kèm</p>
-                <p className="mt-1 text-sm text-gray-500">Chọn tệp PDF từ máy tính, dung lượng tối đa 25MB.</p>
+                <p className="mt-1 text-sm text-gray-500">Chọn tệp PDF từ máy tính, dung lượng tối đa 20MB.</p>
                 {file && <p className="mt-2 text-sm font-semibold text-gray-700">Đã chọn: {file.name}</p>}
               </div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <FileInput className="[&_input]:cursor-pointer [&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:bg-white" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files[0])} />
+              <FileInput
+                className="[&_input]:cursor-pointer [&_input]:rounded-xl [&_input]:border-gray-200 [&_input]:bg-white"
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  setFile(e.target.files[0]);
+                  setFileUrl("");
+                  setFileStoragePath("");
+                }}
+              />
               <Button
                 type="button"
                 className="rounded-xl border border-primary bg-white px-5 font-heading font-bold text-primary hover:bg-blue-50"

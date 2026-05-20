@@ -84,7 +84,21 @@ export default function PostPage() {
 
   const stripHtmlTags = (html = "") => html.replace(/<[^>]*>/g, " ");
   const isPdfUrl = (value = "") =>
-    /^https:\/\/res\.cloudinary\.com\/.+\/raw\/upload\/.+\.pdf(?:[?#].*)?$/i.test(value);
+    /^https:\/\/res\.cloudinary\.com\/.+\/raw\/upload\/.+\.pdf(?:[?#].*)?$/i.test(value) ||
+    /^https:\/\/.+\.supabase\.co\/storage\/v1\/object\/public\/.+\.pdf(?:[?#].*)?$/i.test(value) ||
+    /^https:\/\/.+\.r2\.dev\/.+\.pdf(?:[?#].*)?$/i.test(value);
+  const getPdfViewerUrl = (value = "") => {
+    if (/^https:\/\/.+\.r2\.dev\/.+\.pdf(?:[?#].*)?$/i.test(value)) {
+      try {
+        const url = new URL(value);
+        return `/api/storage/pdf/${url.pathname.slice(1)}`;
+      } catch {
+        return value;
+      }
+    }
+
+    return value;
+  };
 
   const formattedDate = post?.createdAt
     ? new Date(post.createdAt).toLocaleDateString("vi-VN")
@@ -216,7 +230,7 @@ export default function PostPage() {
                         </div>
                       ) : (
                         <Document
-                          file={post.content}
+                          file={getPdfViewerUrl(post.content)}
                           loading={
                             <div className="flex min-h-[60vh] items-center justify-center">
                               <Spinner size="xl" />
@@ -264,7 +278,7 @@ export default function PostPage() {
             {recentPosts &&
               recentPosts.map((recentPost) => (
                 <Link
-                  key={recentPost._id}
+                  key={recentPost.id || recentPost._id || recentPost.slug}
                   to={`/${recentPost.slug}`}
                   className="flex gap-3 rounded-card p-2 transition hover:bg-blue-50"
                 >

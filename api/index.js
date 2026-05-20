@@ -10,6 +10,7 @@ const authRoutes = require("./routes/auth.route");
 const postRoutes = require("./routes/post.route");
 const cloudinaryRoutes = require("./routes/cloudinary.route");
 const settingsRoutes = require("./routes/settings.route");
+const storageRoutes = require("./routes/storage.route");
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use("/api/user", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/cloudinary", cloudinaryRoutes);
+app.use("/api/storage", storageRoutes);
 app.use("/api/settings", settingsRoutes);
 
 // Serve static files from the React app
